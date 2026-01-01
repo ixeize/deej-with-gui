@@ -374,3 +374,52 @@ func (m *sessionMap) String() string {
 
 	return fmt.Sprintf("<%d audio sessions>", sessionCount)
 }
+
+// SessionInfo represents an audio session for the web UI
+type SessionInfo struct {
+	Key         string `json:"key"`
+	SessionType string `json:"type"`
+	DisplayName string `json:"displayName"`
+}
+
+// GetAllSessionKeys returns all current audio sessions for the web UI
+func (m *sessionMap) GetAllSessionKeys() []SessionInfo {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	sessions := []SessionInfo{}
+
+	// Add special sessions first
+	specialSessions := []struct {
+		key         string
+		displayName string
+	}{
+		{masterSessionName, "Master Volume"},
+		{systemSessionName, "System Sounds"},
+		{inputSessionName, "Microphone"},
+	}
+
+	for _, special := range specialSessions {
+		sessions = append(sessions, SessionInfo{
+			Key:         special.key,
+			SessionType: "system",
+			DisplayName: special.displayName,
+		})
+	}
+
+	// Add process sessions from the session map
+	for key := range m.m {
+		// Skip special sessions we already added
+		if key == masterSessionName || key == systemSessionName || key == inputSessionName {
+			continue
+		}
+
+		sessions = append(sessions, SessionInfo{
+			Key:         key,
+			SessionType: "process",
+			DisplayName: key,
+		})
+	}
+
+	return sessions
+}

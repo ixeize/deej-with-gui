@@ -25,6 +25,7 @@ type Deej struct {
 	config   *CanonicalConfig
 	serial   *SerialIO
 	sessions *sessionMap
+	server   *Server
 
 	stopChannel chan bool
 	version     string
@@ -77,6 +78,9 @@ func NewDeej(logger *zap.SugaredLogger, verbose bool) (*Deej, error) {
 
 	d.sessions = sessions
 
+	// Create web server
+	d.server = NewServer(logger, d)
+
 	logger.Debug("Created deej instance")
 
 	return d, nil
@@ -125,6 +129,14 @@ func (d *Deej) Verbose() bool {
 	return d.verbose
 }
 
+// GetServerURL returns the URL of the web configuration server
+func (d *Deej) GetServerURL() string {
+	if d.server != nil {
+		return d.server.GetURL()
+	}
+	return ""
+}
+
 func (d *Deej) setupInterruptHandler() {
 	interruptChannel := util.SetupCloseHandler()
 
@@ -137,6 +149,11 @@ func (d *Deej) setupInterruptHandler() {
 
 func (d *Deej) run() {
 	d.logger.Info("Run loop starting")
+
+	// Start web server
+	if err := d.server.Start(); err != nil {
+		d.logger.Warnw("Failed to start web server", "error", err)
+	}
 
 	// watch the config file for changes
 	go d.config.WatchConfigFileChanges()
@@ -189,6 +206,11 @@ func (d *Deej) signalStop() {
 
 func (d *Deej) stop() error {
 	d.logger.Info("Stopping")
+
+	// Stop web server
+	if err := d.server.Stop(); err != nil {
+		d.logger.Warnw("Failed to stop web server", "error", err)
+	}
 
 	d.config.StopWatchingConfigFile()
 	d.serial.Stop()

@@ -1,6 +1,8 @@
 package deej
 
 import (
+	"os/exec"
+
 	"github.com/getlantern/systray"
 
 	"github.com/omriharel/deej/pkg/deej/icon"
@@ -17,7 +19,10 @@ func (d *Deej) initializeTray(onDone func()) {
 		systray.SetTitle("deej")
 		systray.SetTooltip("deej")
 
-		editConfig := systray.AddMenuItem("Edit configuration", "Open config file with notepad")
+		openWebUI := systray.AddMenuItem("Open configuration UI", "Open web browser to configure sliders")
+		openWebUI.SetIcon(icon.EditConfig)
+
+		editConfig := systray.AddMenuItem("Edit configuration file", "Open config file with notepad")
 		editConfig.SetIcon(icon.EditConfig)
 
 		refreshSessions := systray.AddMenuItem("Re-scan audio sessions", "Manually refresh audio sessions if something's stuck")
@@ -42,6 +47,24 @@ func (d *Deej) initializeTray(onDone func()) {
 					logger.Info("Quit menu item clicked, stopping")
 
 					d.signalStop()
+
+				// open web UI
+				case <-openWebUI.ClickedCh:
+					logger.Info("Open web UI menu item clicked")
+
+					url := d.GetServerURL()
+					if url != "" {
+						var cmd *exec.Cmd
+						if util.Linux() {
+							cmd = exec.Command("xdg-open", url)
+						} else {
+							cmd = exec.Command("cmd", "/C", "start", url)
+						}
+
+						if err := cmd.Start(); err != nil {
+							logger.Warnw("Failed to open browser", "error", err)
+						}
+					}
 
 				// edit config
 				case <-editConfig.ClickedCh:

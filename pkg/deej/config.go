@@ -2,13 +2,16 @@ package deej
 
 import (
 	"fmt"
+	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/omriharel/deej/pkg/deej/util"
 )
@@ -250,4 +253,77 @@ func (cc *CanonicalConfig) onConfigReloaded() {
 	for _, consumer := range cc.reloadConsumers {
 		consumer <- true
 	}
+}
+
+// GetSliderMappingRaw returns the raw slider mapping for API use
+func (cc *CanonicalConfig) GetSliderMappingRaw() map[int][]string {
+	result := make(map[int][]string)
+
+	cc.SliderMapping.iterate(func(sliderIdx int, targets []string) {
+		targetsCopy := make([]string, len(targets))
+		copy(targetsCopy, targets)
+		result[sliderIdx] = targetsCopy
+	})
+
+	return result
+}
+
+// WriteSliderMapping updates the slider_mapping section of config.yaml
+func (cc *CanonicalConfig) WriteSliderMapping(mapping map[int][]string) error {
+	cc.logger.Debug("Writing slider mapping to config file")
+
+	// Read existing config
+	data, err := os.ReadFile(userConfigFilepath)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+
+	// Parse into generic map to preserve other fields
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("parse config: %w", err)
+	}
+
+	// Convert int keys to string keys for YAML
+	sliderMapping := make(map[string]interface{})
+
+	// Get sorted keys for consistent output
+	keys := make([]int, 0, len(mapping))
+	for k := range mapping {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	for _, k := range keys {
+		v := mapping[k]
+		strKey := fmt.Sprintf("%d", k)
+		if len(v) == 0 {
+			sliderMapping[strKey] = nil
+		} else if len(v) == 1 {
+			sliderMapping[strKey] = v[0]
+		} else {
+			sliderMapping[strKey] = v
+		}
+	}
+
+	config[configKeySliderMapping] = sliderMapping
+
+	// Marshal back to YAML
+	output, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+
+	// Write to temp file first, then rename for atomicity
+	tmpPath := userConfigFilepath + ".tmp"
+	if err := os.WriteFile(tmpPath, output, 0644); err != nil {
+		return fmt.Errorf("write temp config: %w", err)
+	}
+
+	if err := os.Rename(tmpPath, userConfigFilepath); err != nil {
+		return fmt.Errorf("rename config: %w", err)
+	}
+
+	cc.logger.Debug("Wrote updated slider mapping to config file")
+	return nil
 }
