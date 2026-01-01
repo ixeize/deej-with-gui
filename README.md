@@ -24,6 +24,7 @@ deej consists of a [lightweight desktop client](#features) written in Go, and an
     - [Schematic](#schematic)
   - [Software](#software)
 - [Slider mapping (configuration)](#slider-mapping-configuration)
+  - [Web Configuration UI](#web-configuration-ui)
 - [Build your own!](#build-your-own)
   - [FAQ](#faq)
   - [Build video](#build-video)
@@ -49,6 +50,10 @@ deej is written in Go and [distributed](https://github.com/omriharel/deej/releas
   - Bind currently active app (on Windows)
   - Bind all other unassigned apps
 - Control your microphone's input level
+- **Web-based configuration UI** for easy slider mapping
+  - Drag-and-drop interface to assign apps to sliders
+  - Live discovery of running audio sessions
+  - No need to manually edit config files
 - Lightweight desktop client, consuming around 10MB of memory
 - Runs from your system tray
 - Helpful notifications to let you know if something isn't working
@@ -114,6 +119,26 @@ noise_reduction: default
 - You can create groups of process names (using a list) to either:
     - control more than one app with a single slider
     - choose whichever process in the group that's currently running (i.e. to have one slider control any game you're playing)
+
+### Web Configuration UI
+
+Instead of manually editing the config file, you can use the built-in web interface to configure your sliders:
+
+1. Right-click the deej icon in your system tray
+2. Select **"Open configuration UI"**
+3. Your browser will open to `http://localhost:9123`
+
+![Web Configuration UI](assets/web-ui.png)
+
+The web UI allows you to:
+
+- **See all your sliders** and their current app assignments
+- **Drag and drop** apps from the "Available Audio Sessions" panel to any slider
+- **Remove apps** from sliders by clicking the × button
+- **Type custom app names** directly into the input field below each slider
+- **Auto-refresh** - the available sessions list updates automatically
+
+Changes are saved instantly and applied immediately thanks to the config hot-reload feature.
 
 ## Build your own!
 
@@ -183,7 +208,7 @@ With many different 3D-printed designs being added to our [community showcase](.
 
 ### Building from source
 
-If you'd rather not download a compiled executable, or want to extend deej or modify it to your needs, feel free to clone the repository and build it yourself. All you need is a Go 1.14 (or above) environment on your machine. If you go this route, make sure to check out the [developer scripts](./pkg/deej/scripts).
+If you'd rather not download a compiled executable, or want to extend deej or modify it to your needs, feel free to clone the repository and build it yourself. All you need is a Go 1.16 (or above) environment on your machine. If you go this route, make sure to check out the [developer scripts](./pkg/deej/scripts).
 
 Like other Go packages, you can also use the `go get` tool: `go get -u github.com/omriharel/deej`. Please note that the package code now resides in the `pkg/deej` directory, and needs to be imported from there if used inside another project.
 
