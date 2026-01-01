@@ -128,7 +128,7 @@ Instead of manually editing the config file, you can use the built-in web interf
 2. Select **"Open configuration UI"**
 3. Your browser will open to `http://localhost:9123`
 
-![Web Configuration UI](assets/web-ui.png)
+![Web Configuration UI](assets/deej-gui.png)
 
 The web UI allows you to:
 
